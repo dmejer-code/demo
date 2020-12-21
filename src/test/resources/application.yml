@@ -1,0 +1,14 @@
+app:
+  datasource:
+    jdbc-url: jdbc:mysql://localhost:3307/testdemoapi?useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: password
+    pool-size: 30
+spring:
+  jackson:
+    default-property-inclusion: non_null
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: true
+    show-sql: true
