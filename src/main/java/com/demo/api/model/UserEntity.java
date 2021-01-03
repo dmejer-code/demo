@@ -1,10 +1,15 @@
 package com.demo.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity(name = "user")
 public final class UserEntity {
@@ -19,15 +24,19 @@ public final class UserEntity {
     @Embedded
     private UserCredentials userCredentials;
 
-    @OneToOne
-    private RoleEntity roleEntity;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.DETACH)
+    @JoinTable(name = "user_role",
+            joinColumns = {@JoinColumn(name = "user_id")},
+            inverseJoinColumns = {@JoinColumn(name = "role_id")})
+    @BatchSize(size = 10)
+    private final Set<RoleEntity> roles = new HashSet<>();
 
     public UserEntity() {
     }
 
     private UserEntity(UserEntityBuilder userEntityBuilder) {
         this.userCredentials = userEntityBuilder.userCredentials;
-        this.roleEntity = userEntityBuilder.roleEntity;
+        this.roles.addAll(userEntityBuilder.roles);
     }
 
     public void setId(UUID id) {
@@ -38,35 +47,56 @@ public final class UserEntity {
         return id;
     }
 
+    @JsonIgnore
     public UserCredentials getUserCredentials() {
         return userCredentials;
     }
 
-    public RoleEntity getRoleEntity() {
-        return roleEntity;
+    @JsonIgnore
+    public Set<RoleEntity> getRoles() {
+        return roles;
     }
 
-    public String getRoleName() {
-        return roleEntity == null ? null : roleEntity.getName();
+    public String getName() {
+        return userCredentials.getName();
+    }
+
+    public Set<Permission> getPermissions() {
+        return roles.stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .collect(Collectors.toSet());
+    }
+
+    public Set<String> getRoleNames() {
+        return roles.stream()
+                .map(RoleEntity::getName)
+                .collect(Collectors.toSet());
     }
 
     public static class UserEntityBuilder {
         private final UserCredentials userCredentials;
-        private RoleEntity roleEntity;
+        private final Set<RoleEntity> roles = new HashSet<>();
 
         public UserEntityBuilder(UserCredentials userCredentials) {
             this.userCredentials = userCredentials;
         }
 
-        public UserEntityBuilder roleEntity(RoleEntity roleEntity) {
-            this.roleEntity = roleEntity;
+        public UserEntityBuilder withRole(RoleEntity roleEntity) {
+            if (roleEntity != null) {
+                this.roles.add(roleEntity);
+            }
+
+            return this;
+        }
+
+        public UserEntityBuilder withRoles(Set<RoleEntity> roles) {
+            this.roles.addAll(roles);
             return this;
         }
 
         public UserEntity build() {
             return new UserEntity(this);
         }
-
     }
 
 }

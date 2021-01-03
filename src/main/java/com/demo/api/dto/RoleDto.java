@@ -1,76 +1,56 @@
 package com.demo.api.dto;
 
+import com.demo.api.model.Permission;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public final class RoleDto {
 
     private String name;
-    private boolean createUser;
-    private boolean updateUser;
-    private boolean deleteUser;
-    private boolean listUser;
+    private Set<Permission> permissions;
+
+    public RoleDto() {
+    }
 
     private RoleDto(RoleDtoBuilder roleDtoBuilder) {
         this.name = roleDtoBuilder.name;
-        this.createUser = roleDtoBuilder.createUser;
-        this.updateUser = roleDtoBuilder.updateUser;
-        this.deleteUser = roleDtoBuilder.deleteUser;
-        this.listUser = roleDtoBuilder.listUser;
+        this.permissions = new HashSet<>(roleDtoBuilder.permissions);
     }
 
     public String getName() {
         return name;
     }
 
-    public boolean isCreateUser() {
-        return createUser;
-    }
-
-    public boolean isUpdateUser() {
-        return updateUser;
-    }
-
-    public boolean isDeleteUser() {
-        return deleteUser;
-    }
-
-    public boolean isListUser() {
-        return listUser;
+    public Set<Permission> getPermissions() {
+        return permissions;
     }
 
     public static class RoleDtoBuilder {
-        private String name;
-        private boolean createUser;
-        private boolean updateUser;
-        private boolean deleteUser;
-        private boolean listUser;
+        private final String name;
+        private final Set<Permission> permissions;
 
         public RoleDtoBuilder(String name) {
             this.name = name;
+            this.permissions = new HashSet<>();
         }
 
-        public RoleDtoBuilder createUser(boolean createUser) {
-            this.createUser = createUser;
+        public RoleDtoBuilder withPermission(Permission permission) {
+            if (permission != null) {
+                this.permissions.add(permission);
+            }
+
             return this;
         }
 
-        public RoleDtoBuilder updateUser(boolean updateUser) {
-            this.updateUser = updateUser;
-            return this;
-        }
-
-        public RoleDtoBuilder deleteUser(boolean deleteUser) {
-            this.deleteUser = deleteUser;
-            return this;
-        }
-
-        public RoleDtoBuilder listUser(boolean listUser) {
-            this.listUser = listUser;
+        public RoleDtoBuilder withPermissions(Set<Permission> permissions) {
+            this.permissions.addAll(permissions);
             return this;
         }
 
         public RoleDto build() {
             return new RoleDto(this);
         }
-
     }
 
 }

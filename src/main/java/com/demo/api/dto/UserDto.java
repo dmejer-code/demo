@@ -2,16 +2,22 @@ package com.demo.api.dto;
 
 import com.demo.api.model.UserCredentials;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public final class UserDto {
 
     private String name;
     private String password;
-    private String roleName;
+    private final Set<String> roleNames = new HashSet<>();
+
+    public UserDto() {
+    }
 
     private UserDto(UserDtoBuilder userDtoBuilder) {
         this.name = userDtoBuilder.name;
         this.password = userDtoBuilder.password;
-        this.roleName = userDtoBuilder.roleName;
+        this.roleNames.addAll(userDtoBuilder.roleNames);
     }
 
     public String getName() {
@@ -22,8 +28,8 @@ public final class UserDto {
         return password;
     }
 
-    public String getRoleName() {
-        return roleName;
+    public Set<String> getRoleNames() {
+        return roleNames;
     }
 
     public UserCredentials getUserCredentials() {
@@ -31,23 +37,27 @@ public final class UserDto {
     }
 
     public static class UserDtoBuilder {
-        private String name;
-        private String password;
-        private String roleName;
+        private final String name;
+        private final String password;
+        private final Set<String> roleNames = new HashSet<>();
 
         public UserDtoBuilder(UserCredentials userCredentials) {
             this.name=userCredentials.getName();
             this.password=userCredentials.getPassword();
         }
 
-        public UserDtoBuilder roleName(String roleName) {
-            this.roleName = roleName;
+        public UserDtoBuilder withRoleName(String roleName) {
+            this.roleNames.add(roleName);
+            return this;
+        }
+
+        public UserDtoBuilder withRoleNames(Set<String> roleNames) {
+            this.roleNames.addAll(roleNames);
             return this;
         }
 
         public UserDto build() {
             return new UserDto(this);
         }
-
     }
 }

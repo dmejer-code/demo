@@ -6,6 +6,7 @@ import com.demo.api.dto.UserDto;
 import com.demo.api.model.RoleEntity;
 import com.demo.api.model.UserCredentials;
 import com.demo.api.model.UserEntity;
+import com.demo.api.util.AuthUtil;
 import com.demo.api.util.UserDtoConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -29,31 +31,33 @@ public class UserService {
         this.roleService = roleService;
     }
 
+    @Transactional(readOnly = true)
     public UserEntity findById(UUID id) {
         return userDao.findById(id).orElse(null);
     }
 
-    public Optional<UserEntity> findByUserName(String userName) {
-        return userDao.findByUserCredentialsName(userName);
+    @Transactional(readOnly = true)
+    public UserEntity findByUserName(String userName) {
+        return userDao.findByUserCredentialsName(userName).orElse(null);
     }
 
+    @Transactional(readOnly = true)
     public List<UserEntity> getAllUsers(int page) {
         int pageNumber = Math.max(page, 0);
-        return userDao.findAll(PageRequest.of(pageNumber, PAGE_SIZE))
-                .toList();
+        return userDao.findAll(PageRequest.of(pageNumber, PAGE_SIZE)).toList();
     }
 
     @Transactional
-    public Optional<UserEntity> addUser(UserDto userDto) {
-        Optional<UserEntity> userEntity = findByUserName(userDto.getName());
-
-        if (userEntity.isPresent()) {
-            return Optional.empty();
+    public UserEntity addUser(UserDto userDto) {
+        if (findByUserName(userDto.getName()) != null) {
+            throw new IllegalStateException("User already exists");
         }
 
-        RoleEntity roleEntity = roleService.getRoleByName(userDto.getRoleName());
-        UserEntity newUserEntity = UserDtoConverter.mapToEntity(userDto, roleEntity);
-        return Optional.of(userDao.save(newUserEntity));
+        Set<RoleEntity> roles = roleService.verifyRole(userDto.getRoleNames());
+        UserEntity userEntity = UserDtoConverter.mapToEntity(userDto, roles);
+        userEntity.getUserCredentials().hash();
+
+        return userDao.save(userEntity);
     }
 
     public void removeUser(UUID id) {
@@ -61,29 +65,33 @@ public class UserService {
     }
 
     @Transactional
-    public Optional<UserEntity> updatePersonById(UUID id, UserDto userDto) {
-        Optional<UserEntity> userEntity = userDao.findById(id);
-
-        if (userEntity.isPresent()) {
-            return Optional.empty();
+    public UserEntity updatePersonById(UUID id, UserDto userDto) {
+        if (userDao.findById(id).isEmpty()) {
+            throw new IllegalStateException("User does not exist");
         }
 
-        RoleEntity roleEntity = roleService.getRoleByName(userDto.getRoleName());
-        UserEntity newUserEntity = UserDtoConverter.mapToEntity(userDto, roleEntity);
-        newUserEntity.setId(id);
-        return Optional.of(userDao.save(newUserEntity));
+        Set<RoleEntity> roleEntity = roleService.verifyRole(userDto.getRoleNames());
+        UserEntity userEntity = UserDtoConverter.mapToEntity(userDto, roleEntity);
+        userEntity.getUserCredentials().hash();
+        userEntity.setId(id);
+
+        return userDao.save(userEntity);
     }
 
+    @Transactional(readOnly = true)
     public Optional<UserEntity> getAuthenticatedUser(UserCredentials credentials) {
+        credentials.hash();
         return userDao.findByUserCredentials(credentials);
     }
 
     public boolean changePassword(UUID userId, String newPassword) {
-        return userDao.changeUserPassword(userId, newPassword) > 0;
+        return userDao.changeUserPassword(userId, AuthUtil.hash(newPassword)) > 0;
     }
 
-    public boolean changePassword(UUID userId, PasswordChangeDto password) {
-        return userDao.changeUserPassword(userId, password.getOldPassword(), password.getNewPassword()) > 0;
+    @Transactional
+    public boolean changePassword(UUID userId, PasswordChangeDto passwordDto) {
+        return !passwordDto.isOfSameValue()
+                && userDao.changeUserPassword(userId, AuthUtil.hash(passwordDto.getOldPassword()), AuthUtil.hash(passwordDto.getNewPassword())) > 0;
     }
 
 }

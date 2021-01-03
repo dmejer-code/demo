@@ -1,6 +1,6 @@
 app:
   datasource:
-    jdbc-url: jdbc:mysql://localhost:3307/demoapi?useUnicode=true&characterEncoding=UTF-8
+    jdbc-url: jdbc:mysql://mysql-standalone:3306/demoapi?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true
     username: root
     password: password
     pool-size: 30

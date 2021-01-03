@@ -8,10 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class RoleService {
@@ -24,26 +23,30 @@ public class RoleService {
         this.roleDao = roleDao;
     }
 
-    public RoleEntity getRoleByName(String roleName) {
-        return roleDao.findByName(roleName).orElse(null);
+    @Transactional(readOnly = true)
+    public Set<RoleEntity> getRoleByName(Set<String> roleNames) {
+        if (CollectionUtils.isEmpty(roleNames)) {
+            return Collections.emptySet();
+        }
+
+        return roleDao.findByNameIn(roleNames);
     }
 
+    @Transactional(readOnly = true)
     public List<RoleEntity> getAllRoles(int page) {
-        int pageNumber =  Math.max(page, 0);
+        int pageNumber = Math.max(page, 0);
         return roleDao.findAll(PageRequest.of(pageNumber, PAGE_SIZE))
                 .toList();
     }
 
     @Transactional
-    public Optional<RoleEntity> addRole(RoleDto roleDto) {
-        Optional<RoleEntity> roleEntity = roleDao.findByName(roleDto.getName());
-
-        if (roleEntity.isPresent()) {
-            return Optional.empty();
+    public RoleEntity addRole(RoleDto roleDto) {
+        if (roleDao.findByName(roleDto.getName()).isPresent()) {
+            throw new IllegalStateException("Role already exists");
         }
 
         RoleEntity newRoleEntity = RoleDtoConverter.mapToEntity(roleDto);
-        return Optional.of(roleDao.save(newRoleEntity));
+        return roleDao.save(newRoleEntity);
     }
 
     public void removeRole(UUID id) {
@@ -51,16 +54,25 @@ public class RoleService {
     }
 
     @Transactional
-    public Optional<RoleEntity> updateRoleById(UUID id, RoleDto roleDto) {
-        Optional<RoleEntity> roleEntity = roleDao.findById(id);
-
-        if (roleEntity.isPresent()) {
-            return Optional.empty();
+    public RoleEntity updateRoleById(UUID id, RoleDto roleDto) {
+        if (roleDao.findById(id).isEmpty()) {
+            throw new IllegalStateException("Role does not exist");
         }
 
         RoleEntity newRoleEntity = RoleDtoConverter.mapToEntity(roleDto);
         newRoleEntity.setId(id);
-        return  Optional.of(roleDao.save(newRoleEntity));
+
+        return roleDao.save(newRoleEntity);
+    }
+
+    public Set<RoleEntity> verifyRole(Set<String> roleNames) {
+        Set<RoleEntity> roles = getRoleByName(roleNames);
+
+        if (roleNames.size() != roles.size()) {
+            throw new IllegalStateException("Role does not exist");
+        }
+
+        return roles;
     }
 
 }

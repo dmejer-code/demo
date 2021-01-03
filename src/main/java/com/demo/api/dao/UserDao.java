@@ -12,7 +12,11 @@ import java.util.UUID;
 public interface UserDao extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByUserCredentialsName(String name);
+
     Optional<UserEntity> findByUserCredentials(UserCredentials userCredentials);
+
+    @Query("select distinct u from user u left join fetch u.roles r left join fetch r.permissions where u.id = ?1")
+    Optional<UserEntity> findById(UUID id);
 
     @Modifying
     @Query("update user u set u.userCredentials.password = ?2 where u.id = ?1")

@@ -5,6 +5,7 @@ import com.demo.api.dto.PasswordForgotDto;
 import com.demo.api.model.UserCredentials;
 import com.demo.api.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,8 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 
 @RestController
+@RequestMapping("auth")
+@EnableAutoConfiguration
 public class AuthController {
 
     private final AuthService authService;
@@ -32,19 +35,19 @@ public class AuthController {
         this.response = response;
     }
 
-    @RequestMapping("/auth/login")
-    public void login(@RequestBody @Valid @NotNull UserCredentials credentials) throws IOException {
+    @RequestMapping("login")
+    public void login(@RequestBody @Valid @NotNull UserCredentials credentials) {
         authService.login(request, credentials);
     }
 
-    @PutMapping("/auth/reset")
+    @PutMapping("reset")
     public void reset(@RequestBody @Valid @NotNull PasswordChangeDto password) {
         if (!authService.resetPassword(request, password)) {
             throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Failed to update password");
         }
     }
 
-    @PutMapping("/auth/forgot")
+    @PutMapping("forgot")
     public void forgot(@RequestBody @Valid @NotNull PasswordForgotDto passwordForgotDto) throws IOException {
         authService.recoverPassword(request, response, passwordForgotDto);
     }

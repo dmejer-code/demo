@@ -14,8 +14,6 @@ public class AuthenticationFilter extends BaseAuthFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-        super.doFilterInternal(request, response, chain);
-
         if (AuthUtil.isAuthenticationRequired(request)) {
             response.sendError(HttpStatus.UNAUTHORIZED.value(), "Not authenticated");
             return;

@@ -8,7 +8,6 @@ spring:
   jackson:
     default-property-inclusion: non_null
   jpa:
-    hibernate:
-      ddl-auto: create
+    generate-ddl: true
     open-in-view: true
     show-sql: true

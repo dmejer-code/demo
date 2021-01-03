@@ -1,5 +1,6 @@
 package com.demo.api.model;
 
+import com.demo.api.util.AuthUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.Column;
@@ -34,6 +35,10 @@ public final class UserCredentials {
     @JsonIgnore
     public boolean isAdminUser() {
         return ADMIN_USER_NAME.equals(getName());
+    }
+
+    public void hash() {
+        this.password = AuthUtil.hash(this.password);
     }
 
 }

@@ -1,11 +1,6 @@
 package com.demo.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 public final class PasswordChangeDto {
 
@@ -20,6 +15,10 @@ public final class PasswordChangeDto {
 
     public String getNewPassword() {
         return newPassword;
+    }
+
+    public boolean isOfSameValue() {
+        return oldPassword.equals(newPassword);
     }
 
 }

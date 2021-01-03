@@ -1,0 +1,24 @@
+version: '3'
+services:
+  mysql-standalone:
+    image: 'mysql:5.7'
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=demoapi
+    ports:
+      - "3307:3306"
+  springboot-docker-container:
+    image: springboot-docker-container
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-standalone:3306/demoapi?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: "root"
+      SPRING_DATASOURCE_PASSWORD: "password"
+    build:
+      context: "./"
+      dockerfile: "DockerFile"
+    depends_on:
+      - mysql-standalone
+    restart: on-failure

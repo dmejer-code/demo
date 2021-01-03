@@ -4,6 +4,8 @@ import com.demo.api.dto.UserDto;
 import com.demo.api.model.RoleEntity;
 import com.demo.api.model.UserEntity;
 
+import java.util.Set;
+
 public final class UserDtoConverter {
 
     private UserDtoConverter() {
@@ -12,13 +14,13 @@ public final class UserDtoConverter {
 
     public static UserDto mapToDto(UserEntity userEntity) {
         return new UserDto.UserDtoBuilder(userEntity.getUserCredentials())
-                .roleName(userEntity.getRoleName())
+                .withRoleNames(userEntity.getRoleNames())
                 .build();
     }
 
-    public static UserEntity mapToEntity(UserDto userDto, RoleEntity roleEntity) {
+    public static UserEntity mapToEntity(UserDto userDto, Set<RoleEntity> roles) {
         return new UserEntity.UserEntityBuilder(userDto.getUserCredentials())
-                .roleEntity(roleEntity)
+                .withRoles(roles)
                 .build();
     }
 

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("users")
 public class UserController {
 
     private final UserService userService;
@@ -23,26 +24,32 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/users")
+    @GetMapping
     public List<UserEntity> listUsers(@RequestParam(required = false, defaultValue = "0") int page) {
         return userService.getAllUsers(page);
     }
 
-    @PostMapping("/users")
+    @PostMapping
     public UserEntity createUser(@Valid @NotNull @RequestBody UserDto userDto) {
-        return userService.addUser(userDto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "User already exists"));
+        try {
+            return userService.addUser(userDto);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, e.getMessage());
+        }
     }
 
-    @DeleteMapping(path = "users/{id}")
+    @DeleteMapping(path = "{id}")
     public void deleteUser(@PathVariable("id") @NotNull UUID id) {
         userService.removeUser(id);
     }
 
-    @PutMapping(path = "users/{id}")
+    @PutMapping(path = "{id}")
     public UserEntity updateUser(@PathVariable("id") @NotNull UUID id, @Valid @NotNull @RequestBody UserDto user) {
-        return userService.updatePersonById(id, user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "User already exists"));
+        try {
+            return userService.updatePersonById(id, user);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, e.getMessage());
+        }
     }
 
 }

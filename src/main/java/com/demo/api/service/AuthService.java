@@ -5,6 +5,7 @@ import com.demo.api.dto.PasswordForgotDto;
 import com.demo.api.model.UserCredentials;
 import com.demo.api.model.UserEntity;
 import com.demo.api.util.AuthUtil;
+import org.hibernate.internal.util.StringHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,12 +25,10 @@ public class AuthService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthService.class);
 
     private final UserService userService;
-    private final RoleService roleService;
 
     @Autowired
-    public AuthService(UserService userService, RoleService roleService) {
+    public AuthService(UserService userService) {
         this.userService = userService;
-        this.roleService = roleService;
     }
 
     public void login(HttpServletRequest request, UserCredentials credentials) {
@@ -44,28 +42,27 @@ public class AuthService {
     }
 
     public boolean resetPassword(HttpServletRequest request, PasswordChangeDto password) {
-        UUID authenticatedUserId = AuthUtil.<UUID>getSessionAttribute(request, AuthUtil.AUTHENTICATED_USER_ATTR);
+        UUID authenticatedUserId = AuthUtil.getSessionAttribute(request, AuthUtil.AUTHENTICATED_USER_ATTR);
         return userService.changePassword(authenticatedUserId, password);
     }
 
     @Transactional
     public void recoverPassword(HttpServletRequest request, HttpServletResponse response, PasswordForgotDto passwordForgotDto) throws IOException {
-        Optional<UserEntity> userEntity = userService.findByUserName(passwordForgotDto.getUserName());
+        UserEntity userEntity = userService.findByUserName(passwordForgotDto.getUserName());
 
-        if (userEntity.isEmpty()) {
-            response.sendError(HttpStatus.BAD_REQUEST.value(), "No such user");
-            request.getSession().invalidate();
+        if (userEntity == null) {
+            response.sendError(HttpStatus.BAD_REQUEST.value(), "User does not exist");
             return;
         }
 
-        String sessionToken = AuthUtil.<String>getSessionAttribute(request, AuthUtil.AUTHENTICATION_TOKEN_ATTR);
+        String sessionToken = AuthUtil.getSessionAttribute(request, AuthUtil.AUTHENTICATION_TOKEN_ATTR);
 
         if (sessionToken == null) {
             setSessionToken(request, response);
             return;
         }
 
-        if (sessionToken.equals(passwordForgotDto.getToken()) && !passwordForgotDto.getNewPassword().isBlank()) {
+        if (sessionToken.equals(passwordForgotDto.getToken()) && StringHelper.isNotEmpty(passwordForgotDto.getNewPassword())) {
             setNewPassword(request, response, passwordForgotDto, userEntity);
             return;
         }
@@ -81,8 +78,8 @@ public class AuthService {
         response.setStatus(HttpStatus.ACCEPTED.value());
     }
 
-    private void setNewPassword(HttpServletRequest request, HttpServletResponse response, PasswordForgotDto passwordForgotDto, Optional<UserEntity> userEntity) throws IOException {
-        if (!userService.changePassword(userEntity.get().getId(), passwordForgotDto.getNewPassword())) {
+    private void setNewPassword(HttpServletRequest request, HttpServletResponse response, PasswordForgotDto passwordForgotDto, UserEntity userEntity) throws IOException {
+        if (!userService.changePassword(userEntity.getId(), passwordForgotDto.getNewPassword())) {
             response.sendError(HttpStatus.BAD_REQUEST.value(), "Could not change password");
             request.getSession().invalidate();
             return;
